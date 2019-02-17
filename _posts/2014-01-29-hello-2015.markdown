@@ -1,83 +1,67 @@
 ---
-layout:     post
-title:      "Hello 2015"
-subtitle:   " \"Hello World, Hello Blog\""
-date:       2015-01-29 12:00:00
-author:     "Hux"
-header-img: "img/post-bg-2015.jpg"
-catalog: true
+layout: post
+title: "Vim 与中文输入法"
+subtitle: 'Using Vim with non-english input method'
+author: "Hux"
+header-style: text
 tags:
-    - 生活
-    - Meta
+  - Vim
 ---
 
-> “Yeah It's on. ”
-
-
-## 前言
-
-Hux 的 Blog 就这么开通了。
-
-[跳过废话，直接看技术实现 ](#build) 
-
-
-
-2015 年，Hux 总算有个地方可以好好写点东西了。
-
-
-作为一个程序员， Blog 这种轮子要是挂在大众博客程序上就太没意思了。一是觉得大部分 Blog 服务都太丑，二是觉得不能随便定制不好玩。之前因为太懒没有折腾，结果就一直连个写 Blog 的地儿都没有。
-
-在玩了一段时间知乎之后，答题的快感又激起了我开博客的冲动。之前的[个人网站](http://huangxuan.me/portfolio)是作品集形式的（现在集成进来了），并不适合用来写博文，一不做二不休，花一天搞一个吧！
-
-
-<p id = "build"></p>
----
-
-## 正文
-
-接下来说说搭建这个博客的技术细节。  
-
-正好之前就有关注过 [GitHub Pages](https://pages.github.com/) + [Jekyll](http://jekyllrb.com/) 快速 Building Blog 的技术方案，非常轻松时尚。
-
-其优点非常明显：
-
-* **Markdown** 带来的优雅写作体验
-* 非常熟悉的 Git workflow ，**Git Commit 即 Blog Post**
-* 利用 GitHub Pages 的域名和免费无限空间，不用自己折腾主机
-	* 如果需要自定义域名，也只需要简单改改 DNS 加个 CNAME 就好了 
-* Jekyll 的自定制非常容易，基本就是个模版引擎
-
-
-本来觉得最大的缺点可能是 GitHub 在国内访问起来太慢，所以第二天一起床就到 GitCafe(Chinese GitHub Copy，现在被 Coding 收购了) 迁移了一个[镜像](http://huxpro.coding.me)出来，结果还是巨慢。
-
-哥哥可是个前端好嘛！ 果断开 Chrome DevTool 查了下网络请求，原来是 **pending 在了 Google Fonts** 上，页面渲染一直被阻塞到请求超时为止，难怪这么慢。  
-忍痛割爱，只好把 Web Fonts 去了（反正超时看到的也只能是 fallback ），果然一下就正常了，而且 GitHub 和 GitCafe 对比并没有感受到明显的速度差异，虽然 github 的 ping 值明显要高一些，达到了 300ms，于是用 DNSPOD 优化了一下速度。
-
-
+Update: 我最后还是放弃在 Vim 模式下输入中文了，mental model 的 cost 太重了（
 
 ---
 
-配置的过程中也没遇到什么坑，基本就是 Git 的流程，相当顺手
+我相信很多中文世界的 Vimer 都遇到过这个烦恼，在 vim 的 insert 模式时可能突然想输个中文，输完之后会本能的直接 `esc` 接 normal 模式操作，结果发现跳出来的是中文输入法……对于 vscode，我一般会在几次错误之后被逼到退出 vscode vim 模式，而对于终端中用的 neovim，就只能尽量不输入中文了。
 
-大的 Jekyll 主题上直接 fork 了 Clean Blog（这个主题也相当有名，就不多赘述了。唯一的缺点大概就是没有标签支持，于是我给它补上了。）
+为了满足我 1% 用 vim 输入中文的场景（比如写博客），我还是想看看有没有什么解决方案，Google 出来的解决方案基本是：*在退出 insert 模式时记住当时的输入法，并自动切换到默认输入法（一般是英文）给 normal 模式用，并且在下一次进入 insert 模式时再切换回来。*
 
-本地调试环境需要 `gem install jekyll`，结果 rubygem 的源居然被墙了……后来手动改成了我大淘宝的镜像源才成功
+原生 vim 的话，可以使用 [smartim](https://github.com/ybian/smartim) 插件，原理是调用 [im-select](https://github.com/daipeihust/im-select) 这个 CLI 工具来切换输入法。
 
-Theme 的 CSS 是基于 Bootstrap 定制的，看得不爽的地方直接在 Less 里改就好了（平时更习惯 SCSS 些），**不过其实我一直觉得 Bootstrap 在移动端的体验做得相当一般，比我在淘宝参与的团队 CSS 框架差多了……**所以为了体验，也补了不少 CSS 进去
+对于 VSCode-vim 的话，smartim 的移植也在近期的 PR 中被 merge 到了插件里，[详情见文档的这部分配置]( https://github.com/VSCodeVim/Vim#use-im-select)，需要指定一下默认输入法和 im-select 的 binary 路径就好。
 
-最后就进入了耗时反而最长的**做图、写字**阶段，也算是进入了**写博客**的正轨，因为是类似 Hack Day 的方式去搭这个站的，所以折腾折腾着大半夜就过去了。
+---
+
+不过实话说，在 vim 中编辑中文的效率和体验和英文比都是大打折扣的。因为中文分词难度太高，不像英文可以简单依靠一个 `split " "` 搞定。所以其实无论 vim（`w`ord，`b`egin，`e`nd），emacs 还是操作系统自带的（比如 macOS 中的 `alt + 箭头`） 「按词移动」功能对于中文都仅仅是跳转到下一个空格处而已，对于中文来说基本就是下一句了……其他常用操作诸如 `f`，`/`, `r`eplace, `t`ill 也都无法很好的工作。
 
-第二天考虑中文字体的渲染，fork 了 [Type is Beautiful](http://www.typeisbeautiful.com/) 的 `font` CSS，调整了字号，适配了 Win 的渣渲染，中英文混排效果好多了。
+不过也算聊胜于无吧，由于我常用 HHKB，能用 vim 操作的一个子集（`hjkl`, `o`, `A`, `I`, `v` etc.）可能也比按住 `Fn` 的方向键好用……
+---
+layout: post
+title: "Vim 与中文输入法"
+subtitle: 'Using Vim with non-english input method'
+author: "Hux"
+header-style: text
+tags:
+  - Vim
+---
 
+Update: 我最后还是放弃在 Vim 模式下输入中文了，mental model 的 cost 太重了（
 
-## 后记
+---
 
-回顾这个博客的诞生，纯粹是出于个人兴趣。在知乎相关问题上回答并获得一定的 star 后，我决定把这个博客主题当作一个小小的开源项目来维护。
+我相信很多中文世界的 Vimer 都遇到过这个烦恼，在 vim 的 insert 模式时可能突然想输个中文，输完之后会本能的直接 `esc` 接 normal 模式操作，结果发现跳出来的是中文输入法……对于 vscode，我一般会在几次错误之后被逼到退出 vscode vim 模式，而对于终端中用的 neovim，就只能尽量不输入中文了。
 
-在经历 v1.0 - v1.5 的蜕变后，这个博客主题愈发完整，不但增加了诸多 UI 层的优化（opinionated）；在代码层面，更加丰富的配置项也使得这个主题拥有了更好的灵活性与可拓展性。而作为一个开源项目，我也积极的为其完善文档与解决 issue。
+为了满足我 1% 用 vim 输入中文的场景（比如写博客），我还是想看看有没有什么解决方案，Google 出来的解决方案基本是：*在退出 insert 模式时记住当时的输入法，并自动切换到默认输入法（一般是英文）给 normal 模式用，并且在下一次进入 insert 模式时再切换回来。*
 
-如果你恰好逛到了这里，希望你也能喜欢这个博客主题。
+原生 vim 的话，可以使用 [smartim](https://github.com/ybian/smartim) 插件，原理是调用 [im-select](https://github.com/daipeihust/im-select) 这个 CLI 工具来切换输入法。
 
-—— Hux 后记于 2015.10
+对于 VSCode-vim 的话，smartim 的移植也在近期的 PR 中被 merge 到了插件里，[详情见文档的这部分配置]( https://github.com/VSCodeVim/Vim#use-im-select)，需要指定一下默认输入法和 im-select 的 binary 路径就好。
 
+---
+
+不过实话说，在 vim 中编辑中文的效率和体验和英文比都是大打折扣的。因为中文分词难度太高，不像英文可以简单依靠一个 `split " "` 搞定。所以其实无论 vim（`w`ord，`b`egin，`e`nd），emacs 还是操作系统自带的（比如 macOS 中的 `alt + 箭头`） 「按词移动」功能对于中文都仅仅是跳转到下一个空格处而已，对于中文来说基本就是下一句了……其他常用操作诸如 `f`，`/`, `r`eplace, `t`ill 也都无法很好的工作。
 
+不过也算聊胜于无吧，由于我常用 HHKB，能用 vim 操作的一个子集（`hjkl`, `o`, `A`, `I`, `v` etc.）可能也比按住 `Fn` 的方向键好用……
+
+##hellow world
+#一级标题
+>nin的好友
+>>黑百合
+
+| name | age
+
+```dot
+digraph G{
+  开始->a
+  a-b
+}
