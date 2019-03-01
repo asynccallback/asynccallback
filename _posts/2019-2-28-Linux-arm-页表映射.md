@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "2019-2-28-Linux-arm-页表映射"
+title: "Linux-arm-页表映射"
 subtitle: '分析arm页表映射过程'
 author: "404"
 header-style: text
