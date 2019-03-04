@@ -187,3 +187,24 @@ struct fdt_header {
 };
 ```
 `fdt_off_dt_struct（ftd）`是用来得到`ftd->off_dt_struct`的值，`fdt_offset_ptr_(fdt, offset)`中与基地址和offset相加地到相对应的dt_struct结构，arm linux中，为什么要用`fdt_off_dt_struct（ftd）`来得到所需地址，我在分析过程中觉得完全可以用`ftd->off_dt_struct`来得到同样的东西，为何要多此一举？我现在还没想清楚，想清后我会加上解释在下面，如果有能理解的请留言我。我们总结这一步就是得到具体的`dt_struct`在数据结构中的位置。
+
+下面我们以具体的vexress设备树编译文件来分析：
+![avatar](/img/in-post/Linux/201930101003.png)
+
+其中红色部分为`fdt_header`，黄色部分为`memory reserve map`,此时`dt_struct`的开始位置刚好等于fdt(假设为0x00)+fdt_header.off_dt_struct(0x38)。接下来的部分便是操作系统来解析`dt_struct`。我们可以接下来的4个字节为`0x01`，Linux对相应字节的对应为：
+![avatar](/img/in-post/Linux/201930101004.png)
+同时`dt_struct`中关于`FDT_BEGIN_NODE`、`FDT_PROP`部分结构体如下：
+```c
+struct fdt_node_header {
+	fdt32_t tag;
+	char name[0];
+};
+
+struct fdt_property {
+	fdt32_t tag;
+	fdt32_t len;
+	fdt32_t nameoff;
+	char data[0];
+};
+```
+结合代码，当检测到是`FDT_BEGIN_NODE`后，会调用`early_init_dt_scan_memory()`,在此节点的属性中寻找有没有`device_type=\'memory\'`，如果没有，则继续扫描下一个节点，期间根据`FDT_PROP`的结构组成，跳过`FDT_PROP`；如果有`device_type=\'memory\'`，则会把这些加入到`memblock`的子系统中，包含此物理节点的起始位置和大小。不同的`FDT_BEGIN_NODE`中含有`device_type=\'memory\'`部分，构成了`memblock`的数组。
