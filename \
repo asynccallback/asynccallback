@@ -103,7 +103,7 @@
         <div class="site-heading">
         {% endif %}
 
-                    <h2>Most people die at 25 and aren't buried until 75</h2>
+                    <h1 >Most people die at 25 and aren't buried until 75</h1>
           <h1>{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}</h1>
           <span class="subheading">{{ page.description }}</span>
         </div>
