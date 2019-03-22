@@ -3,8 +3,8 @@ title: 404 Blog
 SEOTitle: 404的博客 | 404 Blog
 header-img: img/home-bg.jpg
 email: asynccall@163.com
-description: #"关于程序与设计、黑客与画家 | 黄玄，Web & Mobile Lover，Software Engineer，UX Designer | 这里是 @Hux黄玄 的个人博客，与你一起发现更大的世界。"
-keyword: #"黄玄, Hux黄玄, Hux, 鬼栈, huxpro, @huxpro, 黄玄的博客, Hux Blog, 博客, 个人网站, 互联网, Web, JavaScript, 前端, 设计"
+description: ""
+keyword: ""
 url: ""              # your host, for absolute URL
 baseurl: ""                             # for example, '/blog' if your blog hosted on 'host/blog'
 
@@ -66,6 +66,8 @@ netease_comment: false
 
 
 
+
+
 # Analytics settings
 # Baidu Analytics 
 # ba_track_id: [your track id]
@@ -82,12 +84,17 @@ sidebar-about-description: "Only The Paronoid Survive<br>离开世界之前，�
 sidebar-avatar: /img/avatar-404.png      # use absolute URL, seeing it's used in both `/` and `/about/`
 
 
+# Catalog settings
+catalog: true
 
 # Featured Tags
 featured-tags: true                     # whether or not using Feature-Tags
 featured-condition-size: 1              # A tag will be featured if the size of it is more than this condition value
 
+# Tags
+tags: [{
 
+}]
 
 # Progressive Web Apps
 chrome-tab-theme-color: "#000000"

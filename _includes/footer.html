@@ -131,7 +131,7 @@
 
 
 <!-- Side Catalog -->
-{% if page.catalog %}
+{% if site.catalog %}
 <script type="text/javascript">
     function generateCatalog (selector) {
 
@@ -226,7 +226,7 @@
             $en.classList.remove("active");
         }
         // interop with catalog 
-        if ("{{ page.catalog }}") generateCatalog(".catalog-body");
+        if ("{{ site.catalog }}") generateCatalog(".catalog-body");
     }
 
     // handle select change
