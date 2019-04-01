@@ -157,5 +157,201 @@ K9F1208U0M的功能结构图如图所示：
 　　下面讲述如何从NAND Flash中读出数据，假设读地址为addr。
 
 ### 2.1.1 设置NFCONF(对于S3C2440,还要设置NFCONT)
+　　**对于S3C2410**   
+ 　　在本章实例中设置为0x9830——使能NAND Flash控制器、初始化ECC、NAND Flash片选信号 nFCE = 1（inactive，真正使用时再让它等于0），设置TACLS = 0， TWRPH0 = 3，TWRPH1 = 0。这些
+ 时序参数的含义为：TACLS = 1个HCLK时钟，TWRPH0 = 4个HCLK时钟，TWRPH1 = 1个HCLK时钟。
+ 　　K9F1208U0M的实践特性如下：
+```c 
+CLE setup Time = 0ns, CLE Hold Time = 10ns,
+ALE setup Time = 0ns, ALE Hold Time = 10ns,
+WE Pulse Width = 25ns
+```
+　　可以计算：即使在HCLK=100MHz的情况下，TACLS + TWRPH0 + TWRPH1 = 6/100uS = 60ns，也是可以瞒住NAND Flash K9F1208U0M的时序要求的。
 
-　　
+　　**对于S3C2440**   
+　　时间参数也设为：TACLS = 0，TWRPH0 = 3，TWRPH1 = 0。NFCONF寄存器的值如下：   
+　　NFCONF = 0x300   
+　　NFCONF寄存器的取值如下，表示使能NAND Flash控制器、禁止控制引脚信号nFCE、初始化ECC。
+```c
+　　NFCONT = （1<<4) | (1<<1) | (1<<0)
+```
+
+### 2.1.2 在第一次操作NAND Flash前，通常复位一下 NAND Flash
+
+　　**对于S3C2410**   
+```c 
+NFCONF &= ~(1<<11) (发出片选信号）
+NFCMD = 0xff （reset命令）
+```
+　　然后循环查询NFSTAT位0，知道它等于1.
+　　最后禁止片选信号，在实际使用NAND Flash时再使能。
+```c
+NFCONT |= (1<<11) (禁止NAND Flash)
+```
+
+　　**对于S3C2440**   
+```c 
+NFCONF &= ~(1<<11) (发出片选信号）
+NFCMD = 0xff （reset命令）
+```
+　　然后循环查询NFSTAT位0，知道它等于1.
+　　最后禁止片选信号，在实际使用NAND Flash时再使能。
+```c
+NFCONT |= 0x2 (禁止NAND Flash)
+```
+
+### 2.1.3 发出读命令
+　　先使能NAND Flash，然后发出读命令。   
+　　**对于S3C2410**   
+```c 
+NFCONF &= ~(1<<11) (发出片选信号）
+NFCMD = 0 （读命令）
+```
+
+　　**对于S3C2440**   
+```c 
+NFCONF &= ~(1<<11) (发出片选信号）
+NFCMD = 0 （读命令）
+```
+
+### 2.1.4 发出地址信号
+
+　　这步请注意，表中列出了在地址操作的４个步骤对应的地址线，没有用到$A_8$（它由读命令设置，当读命令为0时，$A_8$=0;当读命令为1时，$A_8$=1），如下：
+```c
+NFADDR = addr & 0xff
+NFADDR = (addr>>9) & 0xff	(左移9位，不是8位）
+NFADDR = (addr>>17) & 0xff	(左移17位，不是16位）
+NFADDR = (addr>>25) & 0xff	(左移25位，不是24位）
+```
+
+### 2.1.5 循环查询NFSTAT位0，直到它等于1，这时可以读取数据了
+
+### 2.1.6 连续读NFDATA寄存器512次，得到一页数据（512字节）
+
+　　循环执行第3、4 、5、 6这4个步骤，直到读出所要求的所有数据。
+
+### 2.1.7 最后，禁止NAND Flash的片选信号
+o
+　　**对于S3C2410**   
+```c 
+NFCONF |= (1<<11)
+```
+
+　　**对于S3C2440**   
+```c 
+NFCONF |= (1<<11) 
+```
+
+## 2.2 代码详解
+
+　　实验代码用到的文件有head.S、init.c和main.c。本实例的目的是把一部分代码存放在NAND Flash地址4096之后，当程序启动后通过NAND Flash控制器将他们读出来、执行。以前的代码都小于
+4096字节，开发板启动后他们被自动复制进“Steppingstone”中。
+
+　　连接脚本nand.lds把他们分为两部分，nand.lds代码如下：
+```makefile
+first 0x00000000 : {head.o init.o nand.o}
+
+second 0x300000000 : AT(4096) {MAIN.O}
+}
+```
+ 　　第二行表示head.o、init.o、nand.o这3个文件的运行地址为0，他们在生成的映像文件中的偏移地址也为0（从0开始存放）。
+
+ 　　第三行表示main.o的运行地址为0x30000000，它在生成的映像文件中的偏移地址我诶诶诶4096.
+
+ 　　head.S调用init.c中的函数来关WATCH DOG、初始化SDRAM；调用nand.c中的函数来初始化NAND Flash，然后将main.c中的代码从NAND Flash地址4096开始处复制到SDRAM中；最后跳到
+ main.c中的main函数继续执行。
+
+ 　　由于S3C2410、S3C2440的NAND FLASH控制器并非而完全一样，这个程序要既能处理S3C2410，也能处理S3C3440，然后使用不同的函数进行处理。读取GSTATUS1寄存器，如果它的值为0x32410000或者
+ 0x32410002，就表示处理器是S3C2410，否则是S3C2440。
+
+ 　　nand.c向外引出两个函数：用来初始化NAND Flash的nand_init函数、用来将数据从NAND Flash读得到SDRAM的nand_read函数。
+
+### 2.2.1 nand_init函数分析
+
+　　代码如下：
+```c
+/* 初始化 NAND Flash */
+void nand_init(void_)
+{
+#define TACLS 0
+#define TWRPH0 3
+#define TWRPH1 0
+
+	if ((GSTATUS1 == 0x32410000) || (GSTATUS1 == 0X3241002)){
+		nand_chip.nand_reeset = s3c2410_nand_reset;
+		nand_chip.wait_idle = s3c2410_wait_idle;
+		nand_chip.nand_select_chip = s3c2410_nand_select_chip;
+		nand_chip.nand_deselect_chip = s3c2410_nand_deselect_chip;
+		nand_chip.write_cmd = s3c2410_wirte_cmd;
+		nand_chip.write_addr = s3c2410_write_addr;
+		nand_chip.read_data = s3c2410_read_data;
+
+		s3c2410nand->NFCONF = (1<<15)|(1<<12)|(1<<11)|(TACLS<<8)|(TWRPH0<<4)|(TWRPH1<<0);
+	}
+	else{
+		nand_chip.nand_reeset = s3c2440_nand_reset;
+		nand_chip.wait_idle = s3c2440_wait_idle;
+		nand_chip.nand_select_chip = s3c2440_nand_select_chip;
+		nand_chip.nand_deselect_chip = s3c2440_nand_deselect_chip;
+		nand_chip.write_cmd = s3c2440_wirte_cmd;
+		nand_chip.write_addr = s3c2440_write_addr;
+		nand_chip.read_data = s3c2440_read_data;
+
+		s3c2440nand->NFCONF = (TACLS<<12)|(TWRPH0<<8)|(TWRPH1<<4);
+
+
+		s3c2440nand->NFCONF = (1<<4)|(1<<1)|(1<<0);
+		}
+
+	nand_reset();
+	
+}
+```
+
+### 2.2.2 nand_read函数分析
+
+　　它的原型如下，表示从NAND Flash位置start_addr开始，将数据复制到SDRAM地址buf处，共复制size字节。
+```c
+int
+nand_read(unsigned char *buf, unsigned long start_addr, int size)
+{
+	int i, j;
+
+	if ((start_addr & NAND_BLOCK_MASK) || (size & NAND_BLOCK_MASK)) {
+		return -1;	/* invalid alignment */
+	}
+
+	nand_select_chip();
+
+	for(i=start_addr; i < (start_addr + size);) {
+		/* READ0 */
+		write_cmd(0);
+
+		/* Write Address */
+		write_addr(i);
+		wait_idle();
+
+		NAND_DETECT_RB;
+
+		for(j=0; j < NAND_SECTOR_SIZE; j++, i++) {
+			*buf = (NFDATA & 0xff);
+			buf++;
+		}
+	}
+	nand_deselect_chip();
+	return 0;
+}
+
+　　可以看到，读NAND Flash的操作分为6步：   
+1. 选择芯片
+2. 发出读命令
+3. 发出地址
+4. 等待数据就绪
+5. 读取数据
+6. 结束后，取消片选信号
+
+
+
+
+
+　
